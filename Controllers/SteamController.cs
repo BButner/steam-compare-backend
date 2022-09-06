@@ -52,8 +52,9 @@ namespace steam_compare_backend.Controllers
 
 			var summariesFromCache =
 				_SteamCacheService.TryGetSteamPlayersFromCache( friendSteamIds.ToArray() ).ToList();
-			var idsFromCache = summariesFromCache.Select( summary => summary.SteamId ).ToArray();
-			var idsNotInCache = friendSteamIds.Except( idsFromCache ).ToArray();
+
+			var idsNotInCache = friendSteamIds
+				.Except( summariesFromCache.Select( summary => summary.SteamId ).ToArray() ).ToArray();
 
 			var summaries = await SteamApi.GetPlayerSummaries( _httpClientFactory, _steamService, idsNotInCache );
 
