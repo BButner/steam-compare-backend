@@ -9,19 +9,41 @@ namespace steam_compare_backend.Services
 		public SteamCacheService( IMemoryCache memoryCache ) =>
 			_memoryCache = memoryCache;
 
-		public SteamUserFriendsListResponse? TryGetSteamFriendsFromCacheBySteamId( string steamId )
+		public SteamPlayer? TryGetSteamPlayerFromCache( string steamId )
 		{
-			_memoryCache.TryGetValue( steamId, out SteamUserFriendsListResponse? steamUserFriendsListResponse );
+			_memoryCache.TryGetValue( steamId, out SteamPlayer steamPlayer );
 
-			return steamUserFriendsListResponse;
+			return steamPlayer;
 		}
 
-		public void SetSteamFriendsToCacheBySteamId( string steamId,
-			SteamUserFriendsListResponse steamUserFriendsListResponse )
+		public SteamPlayer[] TryGetSteamPlayersFromCache( string[] steamIds )
+		{
+			var steamPlayers = new List<SteamPlayer>();
+
+			foreach( var steamId in steamIds )
+			{
+				var player = TryGetSteamPlayerFromCache( steamId );
+				if( player is not null ) steamPlayers.Add( player );
+			}
+
+			return steamPlayers.ToArray();
+		}
+
+		public void SetSteamPlayerToCache( SteamPlayer steamPlayer )
 		{
 			var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration( TimeSpan.FromHours( 1 ) );
 
-			_memoryCache.Set( steamId, steamUserFriendsListResponse, cacheEntryOptions );
+			_memoryCache.Set( steamPlayer.SteamId, steamPlayer, cacheEntryOptions );
+		}
+
+		public void SetSteamPlayersToCache( SteamPlayer[] players )
+		{
+			foreach( var steamPlayer in players )
+			{
+				var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration( TimeSpan.FromHours( 1 ) );
+
+				_memoryCache.Set( steamPlayer.SteamId, steamPlayer, cacheEntryOptions );
+			}
 		}
 
 		private IMemoryCache _memoryCache;

@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 
 using steam_compare_backend.Api;
+using steam_compare_backend.Models.Steam;
 using steam_compare_backend.Services;
 
 namespace steam_compare_backend.Controllers
@@ -36,31 +37,32 @@ namespace steam_compare_backend.Controllers
 			return new OkObjectResult( user.First() );
 		}
 
-		[HttpGet( "/player/summaries" )]
-		public async Task<IActionResult> GetPlayerSummaries( [FromQuery, Required] string[] steamIds )
-		{
-			var summaries = await SteamApi.GetPlayerSummaries( _httpClientFactory, _steamService, steamIds );
-
-			return new OkObjectResult( summaries );
-		}
-
 		// TODO: Handle errors (401, 500, etc)
 		[HttpGet( "/user/{steamId}/friends" )]
 		public async Task<IActionResult> GetFriendsListBySteamId( [FromRoute] string steamId )
 		{
-			var friendsCache = _SteamCacheService.TryGetSteamFriendsFromCacheBySteamId( steamId );
-
-			if( friendsCache is not null )
-			{
-				Console.WriteLine( "Returning from Cache!" );
-				return new OkObjectResult( friendsCache );
-			}
-
 			var friends = await SteamApi.GetSteamFriends( _httpClientFactory, _steamService, steamId );
 
-			if( friends is not null ) _SteamCacheService.SetSteamFriendsToCacheBySteamId( steamId, friends );
+			if( friends is null )
+			{
+				return new NotFoundResult();
+			}
 
-			return new OkObjectResult( friends );
+			var friendSteamIds = friends.FriendsList.Friends.Select( friend => friend.SteamId ).ToList();
+
+			var summariesFromCache =
+				_SteamCacheService.TryGetSteamPlayersFromCache( friendSteamIds.ToArray() ).ToList();
+			var idsFromCache = summariesFromCache.Select( summary => summary.SteamId ).ToArray();
+			var idsNotInCache = friendSteamIds.Except( idsFromCache ).ToArray();
+
+			var summaries = await SteamApi.GetPlayerSummaries( _httpClientFactory, _steamService, idsNotInCache );
+
+			if( summaries is not null )
+			{
+				_SteamCacheService.SetSteamPlayersToCache( summaries );
+			}
+
+			return new OkObjectResult( summariesFromCache.Union( summaries ?? Array.Empty<SteamPlayer>() ).ToArray() );
 		}
 
 		private SteamService _steamService;
