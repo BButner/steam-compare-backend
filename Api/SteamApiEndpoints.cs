@@ -7,5 +7,8 @@ namespace steam_compare_backend.Api
 
 		public static readonly string ISteamUserGetPlayerSummaries =
 			"http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002";
+
+		public static readonly string IPlayerServiceGetOwnedGames =
+			"http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001";
 	}
 }

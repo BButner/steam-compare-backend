@@ -17,7 +17,7 @@ namespace steam_compare_backend.Controllers
 			SteamCacheService steamCacheService )
 		{
 			_steamService = service;
-			_SteamCacheService = steamCacheService;
+			_steamCacheService = steamCacheService;
 			_httpClientFactory = httpClientFactory;
 		}
 
@@ -51,7 +51,7 @@ namespace steam_compare_backend.Controllers
 			var friendSteamIds = friends.FriendsList.Friends.Select( friend => friend.SteamId ).ToList();
 
 			var summariesFromCache =
-				_SteamCacheService.TryGetSteamPlayersFromCache( friendSteamIds.ToArray() ).ToList();
+				_steamCacheService.TryGetSteamPlayersFromCache( friendSteamIds.ToArray() ).ToList();
 
 			var idsNotInCache = friendSteamIds
 				.Except( summariesFromCache.Select( summary => summary.SteamId ).ToArray() ).ToArray();
@@ -60,14 +60,26 @@ namespace steam_compare_backend.Controllers
 
 			if( summaries is not null )
 			{
-				_SteamCacheService.SetSteamPlayersToCache( summaries );
+				_steamCacheService.SetSteamPlayersToCache( summaries );
 			}
 
-			return new OkObjectResult( summariesFromCache.Union( summaries ?? Array.Empty<SteamPlayer>() ).ToArray() );
+			var allSummaries = summariesFromCache.Concat( summaries ?? Array.Empty<SteamPlayer>() ).ToList();
+
+			foreach( var steamPlayer in allSummaries )
+			{
+				try
+				{
+					var games = await SteamApi.GetOwnedGames( _httpClientFactory, _steamService, steamPlayer.SteamId );
+					steamPlayer.Games = games;
+				}
+				catch( Exception e ) { }
+			}
+
+			return new OkObjectResult( allSummaries );
 		}
 
 		private SteamService _steamService;
 		private IHttpClientFactory _httpClientFactory;
-		private SteamCacheService _SteamCacheService;
+		private SteamCacheService _steamCacheService;
 	}
 }

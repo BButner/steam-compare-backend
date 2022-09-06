@@ -19,6 +19,7 @@ namespace steam_compare_backend.Models.Steam
 		public string AvatarMedium { get; set; }
 		public string AvatarFull { get; set; }
 		public PersonaState PersonaState { get; set; }
+		public SteamGame[]? Games { get; set; }
 	}
 
 	public enum PersonaState
