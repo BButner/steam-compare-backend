@@ -67,9 +67,26 @@ namespace steam_compare_backend.Controllers
 
 			foreach( var steamPlayer in allSummaries )
 			{
+				var gamesFromCache = _steamCacheService.TryGetSteamGamesFromCache( steamPlayer.SteamId );
+
+				if( gamesFromCache is not null )
+				{
+					steamPlayer.Games = gamesFromCache;
+					continue;
+				}
+
 				try
 				{
 					var games = await SteamApi.GetOwnedGames( _httpClientFactory, _steamService, steamPlayer.SteamId );
+					if( games is not null )
+					{
+						_steamCacheService.SetSteamGamesToCache( steamPlayer.SteamId, games );
+					}
+					else
+					{
+						_steamCacheService.SetSteamGamesToCache( steamPlayer.SteamId, Array.Empty<SteamGame>() );
+					}
+
 					steamPlayer.Games = games;
 				}
 				catch( Exception e ) { }

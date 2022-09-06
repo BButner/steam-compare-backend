@@ -46,6 +46,20 @@ namespace steam_compare_backend.Services
 			}
 		}
 
+		public void SetSteamGamesToCache( string steamId, SteamGame[] games )
+		{
+			var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration( TimeSpan.FromHours( 1 ) );
+
+			_memoryCache.Set( steamId + "_games", games, cacheEntryOptions );
+		}
+
+		public SteamGame[]? TryGetSteamGamesFromCache( string steamId )
+		{
+			_memoryCache.TryGetValue( steamId + "_games", out SteamGame[] games );
+
+			return games;
+		}
+
 		private IMemoryCache _memoryCache;
 	}
 }
