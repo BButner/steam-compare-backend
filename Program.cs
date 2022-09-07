@@ -1,13 +1,12 @@
 using steam_compare_backend.Services;
 
 var builder = WebApplication.CreateBuilder( args );
-var origins = "_myAllowSpecificOrigins";
 
 if( builder.Environment.IsProduction() )
 {
 	builder.Services.AddCors( options =>
 	{
-		options.AddPolicy( name: origins,
+		options.AddDefaultPolicy(
 			policy =>
 			{
 				policy.WithOrigins( "https://steamcompare.games",
@@ -43,7 +42,7 @@ if( app.Environment.IsDevelopment() )
 
 if( app.Environment.IsProduction() )
 {
-	app.UseCors( origins );
+	app.UseCors();
 }
 
 app.UseHttpsRedirection();
