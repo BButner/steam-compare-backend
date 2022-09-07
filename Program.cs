@@ -28,24 +28,12 @@ builder.Services.AddSingleton<SteamService>();
 builder.Services.AddSingleton<SteamCacheService>();
 builder.Services.AddHttpClient();
 
-var hosts = builder.Configuration["AllowedHosts"]?
-	.Split( new[] { ';' }, StringSplitOptions.RemoveEmptyEntries );
-
-if( hosts?.Length > 0 )
-{
-	builder.Services.Configure<HostFilteringOptions>(
-		options => options.AllowedHosts = hosts
-	);
-}
-
 if( builder.Environment.IsProduction() )
 {
 	builder.Services.AddLettuceEncrypt();
 }
 
 var app = builder.Build();
-
-app.UseHostFiltering();
 
 // Configure the HTTP request pipeline.
 if( app.Environment.IsDevelopment() )
