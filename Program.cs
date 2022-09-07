@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.HostFiltering;
+
 using steam_compare_backend.Services;
 
 var builder = WebApplication.CreateBuilder( args );
@@ -25,6 +27,16 @@ builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<SteamService>();
 builder.Services.AddSingleton<SteamCacheService>();
 builder.Services.AddHttpClient();
+
+var hosts = builder.Configuration["AllowedHosts"]?
+	.Split( new[] { ';' }, StringSplitOptions.RemoveEmptyEntries );
+
+if( hosts?.Length > 0 )
+{
+	builder.Services.Configure<HostFilteringOptions>(
+		options => options.AllowedHosts = hosts
+	);
+}
 
 if( builder.Environment.IsProduction() )
 {
