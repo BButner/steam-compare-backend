@@ -45,6 +45,8 @@ if( builder.Environment.IsProduction() )
 
 var app = builder.Build();
 
+app.UseHostFiltering();
+
 // Configure the HTTP request pipeline.
 if( app.Environment.IsDevelopment() )
 {
