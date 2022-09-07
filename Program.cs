@@ -1,6 +1,7 @@
 using steam_compare_backend.Services;
 
 var builder = WebApplication.CreateBuilder( args );
+var origins = "_myAllowSpecificOrigins";
 
 // Add services to the container.
 
@@ -16,6 +17,16 @@ builder.Services.AddHttpClient();
 if( builder.Environment.IsProduction() )
 {
 	builder.Services.AddLettuceEncrypt();
+
+	builder.Services.AddCors( options =>
+	{
+		options.AddPolicy( name: origins,
+			policy =>
+			{
+				policy.WithOrigins( "https://steamcompare.games",
+					"https://www.steamcompare.games" );
+			} );
+	} );
 }
 
 var app = builder.Build();
@@ -25,6 +36,11 @@ if( app.Environment.IsDevelopment() )
 {
 	app.UseSwagger();
 	app.UseSwaggerUI();
+}
+
+if( app.Environment.IsProduction() )
+{
+	app.UseCors( origins );
 }
 
 app.UseHttpsRedirection();
