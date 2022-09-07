@@ -42,6 +42,9 @@ if( app.Environment.IsDevelopment() )
 	app.UseSwaggerUI();
 }
 
+app.UseHttpsRedirection();
+app.UseRouting();
+
 if( app.Environment.IsProduction() )
 {
 	app.UseCors();

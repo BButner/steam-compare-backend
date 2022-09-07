@@ -22,46 +22,48 @@ namespace steam_compare_backend.Controllers
 		}
 
 		[HttpGet( "/user/{steamId}" )]
-		public async Task<IActionResult> GetUserBySteamId( [FromRoute] string steamId )
+		public async Task<IActionResult> GetUserBySteamId( [FromRoute] string steamId,
+			[FromQuery] bool loadGames = true )
 		{
 			var user = ( await SteamApi.GetPlayerSummaries( _httpClientFactory, _steamService, new[] { steamId } ) )
 				.FirstOrDefault();
-
-			// todo handle cache, have to parse each steam id and verify against it, then only retrieve what we need, to build the response
-			// this is singular, but we can share the same cache functionality for the bulk call
 
 			if( user is null )
 			{
 				return new NotFoundResult();
 			}
 
-			var gamesFromCache = _steamCacheService.TryGetSteamGamesFromCache( user.SteamId );
+			return new OkObjectResult( user );
+		}
+
+		[HttpGet( "/user/{steamId}/games" )]
+		public async Task<IActionResult> GetGamesBySteamId( [FromRoute] string steamId )
+		{
+			var gamesFromCache = _steamCacheService.TryGetSteamGamesFromCache( steamId );
 
 			if( gamesFromCache is not null )
 			{
-				user.Games = gamesFromCache;
-
-				return new OkObjectResult( user );
+				return new OkObjectResult( gamesFromCache );
 			}
 
 			try
 			{
-				var games = await SteamApi.GetOwnedGames( _httpClientFactory, _steamService, user.SteamId );
+				var games = await SteamApi.GetOwnedGames( _httpClientFactory, _steamService, steamId );
 
 				if( games is not null )
 				{
-					_steamCacheService.SetSteamGamesToCache( user.SteamId, games );
+					_steamCacheService.SetSteamGamesToCache( steamId, games );
 				}
 				else
 				{
-					_steamCacheService.SetSteamGamesToCache( user.SteamId, Array.Empty<SteamGame>() );
+					_steamCacheService.SetSteamGamesToCache( steamId, Array.Empty<SteamGame>() );
 				}
 
-				user.Games = games;
+				return new OkObjectResult( games );
 			}
 			catch( Exception e ) { }
 
-			return new OkObjectResult( user );
+			return new NotFoundResult();
 		}
 
 		// TODO: Handle errors (401, 500, etc)
