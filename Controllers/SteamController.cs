@@ -24,7 +24,8 @@ namespace steam_compare_backend.Controllers
 		[HttpGet( "/user/{steamId}" )]
 		public async Task<IActionResult> GetUserBySteamId( [FromRoute] string steamId )
 		{
-			var user = await SteamApi.GetPlayerSummaries( _httpClientFactory, _steamService, new[] { steamId } );
+			var user = ( await SteamApi.GetPlayerSummaries( _httpClientFactory, _steamService, new[] { steamId } ) )
+				.FirstOrDefault();
 
 			// todo handle cache, have to parse each steam id and verify against it, then only retrieve what we need, to build the response
 			// this is singular, but we can share the same cache functionality for the bulk call
@@ -34,7 +35,33 @@ namespace steam_compare_backend.Controllers
 				return new NotFoundResult();
 			}
 
-			return new OkObjectResult( user.First() );
+			var gamesFromCache = _steamCacheService.TryGetSteamGamesFromCache( user.SteamId );
+
+			if( gamesFromCache is not null )
+			{
+				user.Games = gamesFromCache;
+
+				return new OkObjectResult( user );
+			}
+
+			try
+			{
+				var games = await SteamApi.GetOwnedGames( _httpClientFactory, _steamService, user.SteamId );
+
+				if( games is not null )
+				{
+					_steamCacheService.SetSteamGamesToCache( user.SteamId, games );
+				}
+				else
+				{
+					_steamCacheService.SetSteamGamesToCache( user.SteamId, Array.Empty<SteamGame>() );
+				}
+
+				user.Games = games;
+			}
+			catch( Exception e ) { }
+
+			return new OkObjectResult( user );
 		}
 
 		// TODO: Handle errors (401, 500, etc)
