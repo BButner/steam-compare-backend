@@ -12,7 +12,15 @@ builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<SteamService>();
 builder.Services.AddSingleton<SteamCacheService>();
 
-builder.Services.AddHttpClient();
+if( builder.Environment.IsProduction() )
+{
+	builder.Services.AddLettuceEncrypt();
+}
+
+if( builder.Environment.IsDevelopment() )
+{
+	builder.Services.AddHttpClient();
+}
 
 var app = builder.Build();
 
