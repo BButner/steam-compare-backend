@@ -22,16 +22,25 @@ namespace steam_compare_backend.Controllers
 		}
 
 		[HttpGet( "/user/{steamId}" )]
-		public async Task<IActionResult> GetUserBySteamId( [FromRoute] string steamId,
-			[FromQuery] bool loadGames = true )
+		public async Task<IActionResult> GetUserBySteamId( [FromRoute] string steamId )
 		{
-			var user = ( await SteamApi.GetPlayerSummaries( _httpClientFactory, _steamService, new[] { steamId } ) )
+			var userFromCache = _steamCacheService.TryGetSteamPlayerFromCache( steamId );
+
+			if( userFromCache != null )
+			{
+				return new OkObjectResult( userFromCache );
+			}
+
+			var user = ( await SteamApi.GetPlayerSummaries( _httpClientFactory, _steamService, new[] { steamId } )
+						?? Array.Empty<SteamPlayer>() )
 				.FirstOrDefault();
 
 			if( user is null )
 			{
 				return new NotFoundResult();
 			}
+
+			_steamCacheService.SetSteamPlayerToCache( user );
 
 			return new OkObjectResult( user );
 		}
@@ -82,7 +91,8 @@ namespace steam_compare_backend.Controllers
 			var summariesFromCache =
 				_steamCacheService.TryGetSteamPlayersFromCache( friendSteamIds.ToArray() ).ToList();
 
-			var idsNotInCache = friendSteamIds
+			//TODO: Handle > 100 friends
+			string[] idsNotInCache = friendSteamIds
 				.Except( summariesFromCache.Select( summary => summary.SteamId ).ToArray() ).ToArray();
 
 			var summaries = await SteamApi.GetPlayerSummaries( _httpClientFactory, _steamService, idsNotInCache );
@@ -92,36 +102,35 @@ namespace steam_compare_backend.Controllers
 				_steamCacheService.SetSteamPlayersToCache( summaries );
 			}
 
-			var allSummaries = summariesFromCache.Concat( summaries ?? Array.Empty<SteamPlayer>() ).ToList();
+			//
+			// foreach( var steamPlayer in allSummaries )
+			// {
+			// 	var gamesFromCache = _steamCacheService.TryGetSteamGamesFromCache( steamPlayer.SteamId );
+			//
+			// 	if( gamesFromCache is not null )
+			// 	{
+			// 		steamPlayer.Games = gamesFromCache;
+			// 		continue;
+			// 	}
+			//
+			// 	try
+			// 	{
+			// 		var games = await SteamApi.GetOwnedGames( _httpClientFactory, _steamService, steamPlayer.SteamId );
+			// 		if( games is not null )
+			// 		{
+			// 			_steamCacheService.SetSteamGamesToCache( steamPlayer.SteamId, games );
+			// 		}
+			// 		else
+			// 		{
+			// 			_steamCacheService.SetSteamGamesToCache( steamPlayer.SteamId, Array.Empty<SteamGame>() );
+			// 		}
+			//
+			// 		steamPlayer.Games = games;
+			// 	}
+			// 	catch( Exception e ) { }
+			// }
 
-			foreach( var steamPlayer in allSummaries )
-			{
-				var gamesFromCache = _steamCacheService.TryGetSteamGamesFromCache( steamPlayer.SteamId );
-
-				if( gamesFromCache is not null )
-				{
-					steamPlayer.Games = gamesFromCache;
-					continue;
-				}
-
-				try
-				{
-					var games = await SteamApi.GetOwnedGames( _httpClientFactory, _steamService, steamPlayer.SteamId );
-					if( games is not null )
-					{
-						_steamCacheService.SetSteamGamesToCache( steamPlayer.SteamId, games );
-					}
-					else
-					{
-						_steamCacheService.SetSteamGamesToCache( steamPlayer.SteamId, Array.Empty<SteamGame>() );
-					}
-
-					steamPlayer.Games = games;
-				}
-				catch( Exception e ) { }
-			}
-
-			return new OkObjectResult( allSummaries );
+			return new OkObjectResult( summariesFromCache.Concat( summaries ?? Array.Empty<SteamPlayer>() ) );
 		}
 
 		private SteamService _steamService;
