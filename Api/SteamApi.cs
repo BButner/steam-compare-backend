@@ -44,6 +44,42 @@ namespace steam_compare_backend.Api
 			return null;
 		}
 
+		public static async Task<SteamVanityUrlResponse?> GetPlayerByVanityUrl(
+			IHttpClientFactory factory,
+			SteamService steamService,
+			string vanityUrl
+		)
+		{
+			var client = factory.CreateClient();
+
+			var dict = new Dictionary<string, string?> { { "key", steamService.SteamKey }, { "vanityurl", vanityUrl } };
+
+			var requestMessage = new HttpRequestMessage(
+				HttpMethod.Get,
+				SteamApiEndpoints.ISteamUserGetVanityUrl );
+
+			requestMessage.RequestUri =
+				new Uri( QueryHelpers.AddQueryString( requestMessage.RequestUri.ToString(), dict ) );
+
+			var response = await client.SendAsync( requestMessage );
+
+			if( response.IsSuccessStatusCode )
+			{
+				try
+				{
+					var vanityUrlResponse = await response.Content.ReadFromJsonAsync<SteamVanityUrlResponseWrapper>();
+
+					return vanityUrlResponse.Response;
+				}
+				catch( Exception ex )
+				{
+					Console.WriteLine( ex.Message );
+				}
+			}
+
+			return null;
+		}
+
 		public static async Task<SteamPlayer[]?> GetPlayerSummaries(
 			IHttpClientFactory factory,
 			SteamService steamService,

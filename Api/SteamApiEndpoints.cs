@@ -10,5 +10,8 @@ namespace steam_compare_backend.Api
 
 		public static readonly string IPlayerServiceGetOwnedGames =
 			"http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001";
+
+		public static readonly string ISteamUserGetVanityUrl =
+			"http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001";
 	}
 }
