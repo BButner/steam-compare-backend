@@ -60,6 +60,19 @@ namespace steam_compare_backend.Services
 			return games;
 		}
 
+		public void SetSteamVanityUrlToCache( string vanityUrl, string steamId )
+		{
+			var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration( TimeSpan.FromHours( 1 ) );
+			_memoryCache.Set( vanityUrl.ToLower(), steamId, cacheEntryOptions );
+		}
+
+		public string? TryGetSteamIdFromVanityUrlCache( string vanityUrl )
+		{
+			_memoryCache.TryGetValue( vanityUrl.ToLower(), out string steamId );
+
+			return steamId;
+		}
+
 		private IMemoryCache _memoryCache;
 	}
 }
