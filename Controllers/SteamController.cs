@@ -24,19 +24,29 @@ namespace steam_compare_backend.Controllers
 		[HttpGet( "/user/{steamId}" )]
 		public async Task<IActionResult> GetUserBySteamId( [FromRoute] string steamId )
 		{
-			var isSteamId = int.TryParse( steamId, out _ );
+			bool isSteamId = int.TryParse( steamId, out _ );
 
 			if( !isSteamId )
 			{
-				var vanityUrl = await SteamApi.GetPlayerByVanityUrl( _httpClientFactory, _steamService, steamId );
+				// try to get the vanity url from cache
+				string? cachedVanityUrl = _steamCacheService.TryGetSteamIdFromVanityUrlCache( steamId );
 
-				if( vanityUrl is not null && vanityUrl.Success == SteamVanityUrlResponseResult.Success )
+				if( cachedVanityUrl is not null )
 				{
-					steamId = vanityUrl.SteamId;
+					steamId = cachedVanityUrl;
 				}
 				else
 				{
-					return new NotFoundResult();
+					var vanityUrl = await SteamApi.GetPlayerByVanityUrl( _httpClientFactory, _steamService, steamId );
+
+					if( vanityUrl is not null && vanityUrl.Success == SteamVanityUrlResponseResult.Success )
+					{
+						steamId = vanityUrl.SteamId;
+					}
+					else
+					{
+						return new NotFoundResult();
+					}
 				}
 			}
 
