@@ -24,7 +24,7 @@ namespace steam_compare_backend.Controllers
 		[HttpGet( "/user/{steamId}" )]
 		public async Task<IActionResult> GetUserBySteamId( [FromRoute] string steamId )
 		{
-			bool isSteamId = int.TryParse( steamId, out _ );
+			bool isSteamId = long.TryParse( steamId, out _ );
 
 			if( !isSteamId )
 			{
