@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,7 +25,7 @@ namespace steam_compare_backend.Controllers
 		[HttpGet( "/user/{steamId}" )]
 		public async Task<IActionResult> GetUserBySteamId( [FromRoute] string steamId )
 		{
-			bool isSteamId = long.TryParse( steamId, out _ );
+			bool isSteamId = Regex.IsMatch(steamId, @"^\d+$");
 
 			if( !isSteamId )
 			{
