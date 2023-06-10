@@ -28,11 +28,6 @@ builder.Services.AddSingleton<SteamService>();
 builder.Services.AddSingleton<SteamCacheService>();
 builder.Services.AddHttpClient();
 
-if( builder.Environment.IsProduction() )
-{
-	builder.Services.AddLettuceEncrypt();
-}
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
